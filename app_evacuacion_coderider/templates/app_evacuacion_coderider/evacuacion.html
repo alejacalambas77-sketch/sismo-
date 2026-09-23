@@ -1,0 +1,383 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SENA - Protocolo de Evacuación</title>
+    
+    <!-- 1. CSS de Librerías Externas -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap" rel="stylesheet">
+    
+    <!-- 2. Estilos Estéticos Pasteles en Lila y Morado -->
+    <style>
+        :root {
+          color-scheme: dark;
+          --bg: #140d1e;
+          --surface: rgba(255, 255, 255, 0.08);
+          --surface-strong: rgba(255, 255, 255, 0.16);
+          --text: #fdf8ff;
+          --muted: #d8c3e8;
+          --primary: #c084fc;     /* Lila bonito */
+          --secondary: #f472b6;   /* Rosa pastel */
+          --accent: #fb7185;      /* Coral pastel */
+          --success: #a7f3d0;     /* Menta suave */
+          --warning: #fef08a;     /* Vainilla pastel */
+          --shadow: 0 20px 60px rgba(76, 29, 149, 0.25);
+          --radius: 24px;
+          font-family: 'Montserrat', Inter, system-ui, sans-serif;
+        }
+
+        * { 
+          box-sizing: border-box; 
+        }
+
+        body {
+          min-height: 100vh;
+          margin: 0;
+          background:
+            radial-gradient(circle at top left, rgba(192, 132, 252, 0.22), transparent 30rem),
+            radial-gradient(circle at top right, rgba(244, 114, 182, 0.2), transparent 28rem),
+            linear-gradient(135deg, #11091c 0%, #1a102b 45%, #2a163d 100%);
+          color: var(--text);
+          overflow-x: hidden;
+        }
+
+        /* Rejilla de fondo sutil */
+        body::before {
+          position: fixed;
+          inset: 0;
+          z-index: -3;
+          pointer-events: none;
+          content: "";
+          background-image:
+            linear-gradient(rgba(244, 114, 182, 0.04) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(192, 132, 252, 0.04) 1px, transparent 1px);
+          background-size: 56px 56px;
+          mask-image: linear-gradient(to bottom, black, transparent 85%);
+        }
+
+        /* Esferas de luz flotantes */
+        .bg-orb {
+          position: fixed;
+          z-index: -2;
+          width: 18rem;
+          height: 18rem;
+          border-radius: 999px;
+          filter: blur(50px);
+          opacity: 0.4;
+          animation: float 8s ease-in-out infinite;
+        }
+        .orb-one { top: 8%; left: -4rem; background: #e879f9; }
+        .orb-two { right: -5rem; bottom: 12%; background: #a855f7; animation-delay: -2s; }
+
+        /* Menú de Navegación */
+        .navbar {
+          width: min(1200px, calc(100% - 2rem));
+          margin: 1.5rem auto 2rem;
+          padding: 0.85rem 1.5rem;
+          border: 1px solid rgba(244, 114, 182, 0.25);
+          border-radius: 999px;
+          background: rgba(255, 255, 255, 0.06);
+          backdrop-filter: blur(18px);
+          box-shadow: var(--shadow);
+        }
+        .nav-contenedor { display: flex; justify-content: space-between; align-items: center; }
+        .nav-logo { font-size: 1.4rem; font-weight: 900; color: var(--primary); text-decoration: none; }
+        .nav-menu { display: flex; gap: 1rem; list-style: none; margin: 0; padding: 0; }
+        .nav-enlace {
+          color: var(--muted);
+          text-decoration: none;
+          font-weight: 600;
+          padding: 0.6rem 1.2rem;
+          border-radius: 999px;
+          transition: all 0.3s ease;
+        }
+        .nav-enlace:hover, .nav-enlace.activo {
+          color: var(--text);
+          background: var(--surface-strong);
+          border: 1px solid rgba(192, 132, 252, 0.4);
+        }
+
+        /* Contenedor Principal */
+        .dashboard-container {
+          width: min(1200px, calc(100% - 2rem));
+          margin: 0 auto 3rem;
+        }
+
+        .header-main {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 2rem;
+        }
+        .header-main h1 { font-size: 2.2rem; margin: 0; font-weight: 800; }
+        .header-main h1 span { color: var(--primary); }
+        .header-main p { color: var(--muted); margin: 0.2rem 0 0; }
+        .status-indicator {
+          padding: 0.5rem 1rem;
+          border-radius: 999px;
+          background: rgba(167, 243, 208, 0.15);
+          color: var(--success);
+          border: 1px solid rgba(167, 243, 208, 0.3);
+          font-weight: 700;
+          font-size: 0.9rem;
+        }
+
+        /* Rejilla de Tarjetas */
+        .grid-dashboard {
+          display: grid;
+          grid-template-columns: 1.8fr 1.2fr;
+          gap: 1.5rem;
+        }
+        .col-main, .col-side { display: flex; flex-direction: column; gap: 1.5rem; }
+
+        /* Tarjetas Cristal */
+        .card {
+          position: relative;
+          overflow: hidden;
+          border-radius: var(--radius);
+          border: 1px solid rgba(244, 114, 182, 0.2);
+          background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+          box-shadow: var(--shadow);
+          backdrop-filter: blur(18px);
+          padding: 1.4rem;
+        }
+
+        .card-title {
+          font-size: 1.1rem;
+          font-weight: 800;
+          color: var(--text);
+          margin-bottom: 1rem;
+          display: flex;
+          align-items: center;
+          gap: 0.6rem;
+        }
+        .card-title i { color: var(--primary); }
+
+        /* Buscador e Inputs en Mapa */
+        .map-search-bar {
+          display: flex;
+          gap: 0.5rem;
+          margin-bottom: 0.8rem;
+        }
+        .map-search-bar input {
+          flex: 1;
+          border: 1px solid rgba(192, 132, 252, 0.25);
+          border-radius: 12px;
+          padding: 0.6rem 1rem;
+          background: rgba(20, 13, 30, 0.5);
+          color: var(--text);
+        }
+        .btn-action {
+          background: linear-gradient(135deg, var(--primary), var(--secondary));
+          border: 0;
+          border-radius: 12px;
+          color: #1a092b;
+          font-weight: 800;
+          padding: 0.6rem 1rem;
+          cursor: pointer;
+          box-shadow: 0 4px 15px rgba(192, 132, 252, 0.3);
+          transition: transform 0.2s ease;
+        }
+        .btn-action:hover {
+          transform: translateY(-2px);
+        }
+
+        /* Sismos */
+        .sismo-item {
+          background: rgba(20, 13, 30, 0.4);
+          border-left: 4px solid var(--primary);
+          border-radius: 12px;
+          padding: 0.8rem 1rem;
+          margin-bottom: 0.6rem;
+        }
+        .sismo-item span { color: var(--secondary); font-weight: bold; }
+
+        @keyframes float {
+          0%, 100% { transform: translate3d(0, 0, 0); }
+          50% { transform: translate3d(0, -1rem, 0); }
+        }
+
+        @media (max-width: 900px) {
+          .grid-dashboard { grid-template-columns: 1fr; }
+        }
+
+        /* Ocultar cuadro de instrucciones sobrante de Leaflet */
+        .leaflet-routing-container {
+          display: none !important;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="bg-orb orb-one"></div>
+    <div class="bg-orb orb-two"></div>
+
+    <!-- 🧭 Menú Nav Estilo Glassmorphism -->
+    <nav class="navbar">
+        <div class="nav-contenedor">
+            <a href="#" class="nav-logo"><i class="fa-solid fa-shield-halved"></i> CodeRider</a>
+            <ul class="nav-menu">
+                <li><a href="#" class="nav-enlace activo">📍 Evacuación</a></li>
+                <li><a href="#" class="nav-enlace">📊 Panel</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <main class="dashboard-container">
+        <header class="header-main">
+            <div>
+                <h1>Protocolo de <span>Evacuación</span></h1>
+                <p>Centro de Comercio y Servicios • Piso 1</p>
+            </div>
+            <div class="status-indicator">
+                <i class="fa-solid fa-circle-dot"></i> Sistema Activo
+            </div>
+        </header>
+
+        <div class="grid-dashboard">
+            <!-- Columna Izquierda: Mapa Interactivo + Sismos -->
+            <div class="col-main">
+                <article class="card">
+                    <div class="card-title">
+                        <i class="fa-solid fa-route"></i> NAVEGACIÓN Y RUTAS EN TIEMPO REAL
+                    </div>
+
+                    <div class="map-search-bar" style="display: flex; gap: 0.5rem; margin-bottom: 0.8rem;">
+                        <input type="text" id="origen-input" placeholder="Escribe origen o haz clic en el mapa..." style="flex: 1; padding: 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.2); background: rgba(0,0,0,0.3); color: #fff;">
+                        <input type="text" id="destino-input" value="SENA Comercio y Servicios" readonly style="width: 180px; padding: 0.6rem; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1); background: rgba(0,0,0,0.5); color: var(--muted); text-overflow: ellipsis;">
+                        
+                        <button class="btn-action" onclick="obtenerUbicacionActual()" title="Usar mi ubicación actual" style="padding: 0.6rem 0.8rem; border-radius: 8px; border: 0; background: #22c55e; color: #fff; font-weight: bold; cursor: pointer;">
+                            <i class="fa-solid fa-location-crosshairs"></i>
+                        </button>
+
+                        <button class="btn-action" onclick="trazarRutaManual()" style="padding: 0.6rem 1rem; border-radius: 8px; border: 0; background: var(--primary); color: #000; font-weight: bold; cursor: pointer;">
+                            <i class="fa-solid fa-directions"></i> Calcular
+                        </button>
+                    </div>
+
+                    <div class="mapa-wrapper" style="display: grid; grid-template-columns: 240px 1fr; gap: 10px;">
+                        <div id="panel-rutas" style="background: rgba(0,0,0,0.3); padding: 10px; border-radius: 12px; font-size: 0.85rem;">
+                            <p style="color: var(--primary); font-weight: 800; margin-bottom: 8px;">🛣️ Opciones de Ruta</p>
+                            
+                            <div class="ruta-option activa" onclick="seleccionarRuta(0)" style="background: rgba(110, 231, 255, 0.15); border: 1px solid var(--primary); padding: 8px; border-radius: 8px; margin-bottom: 6px; cursor: pointer;">
+                                <strong>🔵 Ruta Principal</strong>
+                                <div style="color: var(--success); font-weight: bold; font-size: 0.95rem; margin-top: 2px;">28 min <span style="font-size: 0.8rem; color: var(--muted);">(11.8 km)</span></div>
+                                <small style="color: var(--muted);">Por Cra. 9 / Popayán</small>
+                            </div>
+
+                            <div class="ruta-option" onclick="seleccionarRuta(1)" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; margin-bottom: 6px; cursor: pointer;">
+                                <strong>⚪ Ruta Alternativa 1</strong>
+                                <div style="color: var(--muted); font-weight: bold; font-size: 0.85rem; margin-top: 2px;">29 min <span>(14.1 km)</span></div>
+                                <small style="color: var(--muted);">Por Cra. 6</small>
+                            </div>
+
+                            <div class="ruta-option" onclick="seleccionarRuta(2)" style="background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255,255,255,0.1); padding: 8px; border-radius: 8px; cursor: pointer;">
+                                <strong>⚪ Ruta Alternativa 2</strong>
+                                <div style="color: var(--muted); font-weight: bold; font-size: 0.85rem; margin-top: 2px;">31 min <span>(10.9 km)</span></div>
+                                <small style="color: var(--muted);">Por Variante Norte</small>
+                            </div>
+                        </div>
+
+                        <div id="mapa-interactivo" style="width: 100%; height: 380px; border-radius: 12px; border: 1px solid rgba(255,255,255,0.15);"></div>
+                    </div>
+                    <p style="color: var(--muted); font-size: 0.8rem; margin-top: 8px;"><i class="fa-solid fa-hand-pointer"></i> <strong>Tip:</strong> Haz clic sobre cualquier punto del mapa para trazar tu ruta personalizada.</p>
+                </article>
+
+               <!-- Tarjeta de Alerta Sísmica con Estilo Notificación -->
+<article class="card" style="padding: 0; overflow: hidden;">
+    <div id="alerta-sismo-header" style="background: rgba(251, 113, 133, 0.25); border-bottom: 1px solid rgba(251, 113, 133, 0.4); padding: 1.2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start;">
+            <h3 id="sismo-titulo" style="margin: 0; font-size: 1.1rem; color: #f472b6; font-weight: 800;">
+                Sismo reciente en Colombia
+            </h3>
+            <span style="background: #ef4444; color: white; font-size: 0.7rem; font-weight: 900; padding: 2px 8px; border-radius: 4px;">
+                ALERTA
+            </span>
+        </div>
+        <div id="sismo-magnitud" style="font-size: 1.8rem; font-weight: 900; color: #fff; margin: 0.2rem 0;">
+            Cargando...
+        </div>
+        <p id="sismo-ubicacion" style="margin: 0; font-size: 0.85rem; color: var(--muted);">
+            Obteniendo datos de Colombia...
+        </p>
+    </div>
+
+    <div style="padding: 1rem;">
+        <div class="card-title" style="font-size: 0.9rem; margin-bottom: 0.5rem;">
+            <i class="fa-solid fa-list-ul"></i> Registros Recientes en Colombia
+        </div>
+        <div id="lista-sismos" style="max-height: 180px; overflow-y: auto;">
+            <p style="color: var(--muted);">🔄 Cargando registros...</p>
+        </div>
+    </div>
+</article>
+
+            <!-- Columna Derecha: Video + Alarma + Manual -->
+            <div class="col-side">
+                <article class="card">
+                    <div class="card-title">
+                        <i class="fa-solid fa-circle-play"></i> Video del Procedimiento
+                    </div>
+                    <video controls width="100%" style="border-radius: 12px;">
+                        <source src="{% static 'recursos/videos/clips/Evacuacion.mp4' %}" type="video/mp4">
+                    </video>
+                </article>
+
+                <article class="card">
+                    <div class="card-title">
+                        <i class="fa-solid fa-bell"></i> Alarma Sonora
+                    </div>
+                    <audio controls style="width: 100%;">
+                        <source src="{% static 'recursos/audios/alertas/Alarma de Emergencia.mp3' %}" type="audio/mpeg">
+                    </audio>
+                </article>
+
+                <article class="card">
+                    <div class="card-title">
+                        <i class="fa-solid fa-file-pdf"></i> Manual del Protocolo
+                    </div>
+                    <p style="color: var(--muted); font-size: 0.9rem;">Documento oficial en PDF para contingencias.</p>
+                    <a href="{% static 'recursos/documentos/pdf/plan_evacuacion.pdf' %}" class="btn-action" style="display: block; text-align: center; text-decoration: none; padding: 0.7rem; border-radius: 8px; background: var(--primary); color: #000; font-weight: bold;" download>
+                        <i class="fa-solid fa-download"></i> Descargar PDF
+                    </a>
+                </article>
+            </div>
+        </div>
+    </main>
+
+    <!-- 📜 1. Librerías Externas JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://unpkg.com/leaflet-routing-machine@latest/dist/leaflet-routing-machine.js"></script>
+
+    <!-- 📜 2. Variables Globales de Django para JavaScript -->
+    <script>
+        const URL_JSON = "{% static 'recursos/datos/json/puntos_encuentro.json' %}";
+        const URL_API_SISMOS = "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/2.5_day.geojson";
+    </script>
+
+    <!-- 📜 3. Scripts Locales del Proyecto (Sin Duplicados) -->
+    <script src="{% static 'recursos/scripts/puntos_encuentro.js' %}"></script>
+    <script src="{% static 'recursos/scripts/tabla_csv.js' %}"></script>
+    <script src="{% static 'recursos/scripts/sismos_api.js' %}"></script>
+    <script src="{% static 'recursos/scripts/mapa.js' %}"></script>
+
+    <!-- 📜 4. Inicializador Seguro -->
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (typeof window.cargarPuntosSismos === "function") {
+                window.cargarPuntosSismos(typeof mapa !== 'undefined' ? mapa : null);
+            }
+        });
+    </script>
+<!-- Variables Globales de Django para JavaScript -->
+<script>
+    const URL_JSON = "{% static 'recursos/datos/json/puntos_encuentro.json' %}";
+    const URL_API_SISMOS = "https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&minlatitude=-4.5&maxlatitude=13.0&minlongitude=-79.5&maxlongitude=-66.0&minmagnitude=2.5";
+</script>
+</body>
+</html>

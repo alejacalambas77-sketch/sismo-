@@ -1,0 +1,18 @@
+# Archivos de entorno y claves secretas 🔐
+.env
+.env.local
+
+# Carpetas de dependencias y librerías 📦
+node_modules/
+vendor/
+
+# Archivos del sistema operativo y del editor 💻
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# Carpetas de compilación o salidas 🚀
+dist/
+build/
+*.log

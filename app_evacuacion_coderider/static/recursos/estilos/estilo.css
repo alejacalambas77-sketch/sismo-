@@ -1,0 +1,198 @@
+/* static/recursos/estilos/estilo.css */
+
+:root {
+  color-scheme: dark;
+  --bg: #140d1e;
+  --surface: rgba(255, 255, 255, 0.08);
+  --surface-strong: rgba(255, 255, 255, 0.16);
+  --text: #fdf8ff;
+  --muted: #d8c3e8;
+  --primary: #c084fc;     /* Lila bonito */
+  --secondary: #f472b6;   /* Rosa pastel */
+  --accent: #fb7185;      /* Coral pastel */
+  --success: #a7f3d0;     /* Menta suave */
+  --warning: #fef08a;     /* Vainilla pastel */
+  --shadow: 0 20px 60px rgba(76, 29, 149, 0.25);
+  --radius: 24px;
+  font-family: 'Montserrat', Inter, system-ui, sans-serif;
+}
+
+* { 
+  box-sizing: border-box; 
+}
+
+body {
+  min-height: 100vh;
+  margin: 0;
+  background:
+    radial-gradient(circle at top left, rgba(192, 132, 252, 0.22), transparent 30rem),
+    radial-gradient(circle at top right, rgba(244, 114, 182, 0.2), transparent 28rem),
+    linear-gradient(135deg, #11091c 0%, #1a102b 45%, #2a163d 100%);
+  color: var(--text);
+  overflow-x: hidden;
+}
+
+/* Rejilla de fondo sutil */
+body::before {
+  position: fixed;
+  inset: 0;
+  z-index: -3;
+  pointer-events: none;
+  content: "";
+  background-image:
+    linear-gradient(rgba(244, 114, 182, 0.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(192, 132, 252, 0.04) 1px, transparent 1px);
+  background-size: 56px 56px;
+  mask-image: linear-gradient(to bottom, black, transparent 85%);
+}
+
+/* Esferas de luz flotantes */
+.bg-orb {
+  position: fixed;
+  z-index: -2;
+  width: 18rem;
+  height: 18rem;
+  border-radius: 999px;
+  filter: blur(50px);
+  opacity: 0.4;
+  animation: float 8s ease-in-out infinite;
+}
+.orb-one { top: 8%; left: -4rem; background: #e879f9; }
+.orb-two { right: -5rem; bottom: 12%; background: #a855f7; animation-delay: -2s; }
+
+/* Menú de Navegación */
+.navbar {
+  width: min(1200px, calc(100% - 2rem));
+  margin: 1.5rem auto 2rem;
+  padding: 0.85rem 1.5rem;
+  border: 1px solid rgba(244, 114, 182, 0.25);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.06);
+  backdrop-filter: blur(18px);
+  box-shadow: var(--shadow);
+}
+.nav-contenedor { display: flex; justify-content: space-between; align-items: center; }
+.nav-logo { font-size: 1.4rem; font-weight: 900; color: var(--primary); text-decoration: none; }
+.nav-menu { display: flex; gap: 1rem; list-style: none; margin: 0; padding: 0; }
+.nav-enlace {
+  color: var(--muted);
+  text-decoration: none;
+  font-weight: 600;
+  padding: 0.6rem 1.2rem;
+  border-radius: 999px;
+  transition: all 0.3s ease;
+}
+.nav-enlace:hover, .nav-enlace.activo {
+  color: var(--text);
+  background: var(--surface-strong);
+  border: 1px solid rgba(192, 132, 252, 0.4);
+}
+
+/* Contenedor Principal */
+.dashboard-container {
+  width: min(1200px, calc(100% - 2rem));
+  margin: 0 auto 3rem;
+}
+
+.header-main {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+.header-main h1 { font-size: 2.2rem; margin: 0; font-weight: 800; }
+.header-main h1 span { color: var(--primary); }
+.header-main p { color: var(--muted); margin: 0.2rem 0 0; }
+.status-indicator {
+  padding: 0.5rem 1rem;
+  border-radius: 999px;
+  background: rgba(167, 243, 208, 0.15);
+  color: var(--success);
+  border: 1px solid rgba(167, 243, 208, 0.3);
+  font-weight: 700;
+  font-size: 0.9rem;
+}
+
+/* Rejilla de Tarjetas */
+.grid-dashboard {
+  display: grid;
+  grid-template-columns: 1.8fr 1.2fr;
+  gap: 1.5rem;
+}
+.col-main, .col-side { display: flex; flex-direction: column; gap: 1.5rem; }
+
+/* Tarjetas Cristal */
+.card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+  border: 1px solid rgba(244, 114, 182, 0.2);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.09), rgba(255, 255, 255, 0.03));
+  box-shadow: var(--shadow);
+  backdrop-filter: blur(18px);
+  padding: 1.4rem;
+}
+
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 800;
+  color: var(--text);
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+.card-title i { color: var(--primary); }
+
+/* Buscador e Inputs en Mapa */
+.map-search-bar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 0.8rem;
+}
+.map-search-bar input {
+  flex: 1;
+  border: 1px solid rgba(192, 132, 252, 0.25);
+  border-radius: 12px;
+  padding: 0.6rem 1rem;
+  background: rgba(20, 13, 30, 0.5);
+  color: var(--text);
+}
+.btn-action {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+  border: 0;
+  border-radius: 12px;
+  color: #1a092b;
+  font-weight: 800;
+  padding: 0.6rem 1rem;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(192, 132, 252, 0.3);
+  transition: transform 0.2s ease;
+}
+.btn-action:hover {
+  transform: translateY(-2px);
+}
+
+/* Sismos */
+.sismo-item {
+  background: rgba(20, 13, 30, 0.4);
+  border-left: 4px solid var(--primary);
+  border-radius: 12px;
+  padding: 0.8rem 1rem;
+  margin-bottom: 0.6rem;
+}
+.sismo-item span { color: var(--secondary); font-weight: bold; }
+
+@keyframes float {
+  0%, 100% { transform: translate3d(0, 0, 0); }
+  50% { transform: translate3d(0, -1rem, 0); }
+}
+
+@media (max-width: 900px) {
+  .grid-dashboard { grid-template-columns: 1fr; }
+}
+
+/* Ocultar cuadro de instrucciones sobrante de Leaflet */
+.leaflet-routing-container {
+  display: none !important;
+}
